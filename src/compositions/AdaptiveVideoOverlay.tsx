@@ -1,0 +1,142 @@
+import React from "react";
+import { AbsoluteFill, Sequence } from "remotion";
+import { KeywordOverlay } from "../components/callouts/KeywordOverlay";
+import { BackgroundVideo } from "../components/video/BackgroundVideo";
+import { SplitScreenContainer } from "../components/video/SplitScreenContainer";
+import { getTimelineForDuration, type VideoDurationMinutes } from "../data/timelinePresets";
+import { ArchitectureScene } from "../scenes/ArchitectureScene";
+import { MetricsScene } from "../scenes/MetricsScene";
+import { SpeakerScene } from "../scenes/SpeakerScene";
+import { TerminalScene } from "../scenes/TerminalScene";
+import { TitleScene } from "../scenes/TitleScene";
+import type { KeywordCue } from "../types/callout";
+
+export interface AdaptiveVideoOverlayProps {
+  durationMinutes?: VideoDurationMinutes;
+  videoSrc?: string;
+  customKeywordCues?: KeywordCue[];
+}
+
+/**
+ * AdaptiveVideoOverlay coordinates broadcast motion graphics across 1 to 5 minute videos.
+ * Intelligently spaces out TitleCard, SpeakerLowerThird, KeywordCallouts, SplitScreen Diagrams,
+ * Live Terminal Demos, Telemetry Metrics, and Outro cards according to total runtime.
+ */
+export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
+  durationMinutes = 1,
+  videoSrc = "test-video.mp4",
+  customKeywordCues,
+}) => {
+  const schedule = getTimelineForDuration(durationMinutes);
+  const { scenes, splitScreenIntervals, keywordCues, totalDurationFrames } = schedule;
+
+  return (
+    <AbsoluteFill>
+      {/* Background Video wrapped in Multi-Interval SplitScreenContainer */}
+      <SplitScreenContainer intervals={splitScreenIntervals}>
+        <BackgroundVideo
+          src={videoSrc}
+          durationInFrames={totalDurationFrames}
+          objectFit="cover"
+        />
+      </SplitScreenContainer>
+
+      {/* Kinetic Spoken Keyword Callouts */}
+      <KeywordOverlay cues={customKeywordCues ?? keywordCues} />
+
+      {/* 1. Opening Title Scene */}
+      {scenes.titleIntro && (
+        <Sequence
+          from={scenes.titleIntro.startFrame}
+          durationInFrames={scenes.titleIntro.durationFrames}
+          name="TitleCard"
+        >
+          <TitleScene title={scenes.titleIntro.title} />
+        </Sequence>
+      )}
+
+      {/* 2. Speaker Lower-Third */}
+      {scenes.speakerLowerThird && (
+        <Sequence
+          from={scenes.speakerLowerThird.startFrame}
+          durationInFrames={scenes.speakerLowerThird.durationFrames}
+          name="SpeakerLowerThird"
+        >
+          <SpeakerScene
+            name={scenes.speakerLowerThird.name}
+            title={scenes.speakerLowerThird.title}
+          />
+        </Sequence>
+      )}
+
+      {/* 3. Primary Architecture Diagram */}
+      {scenes.architecture1 && (
+        <Sequence
+          from={scenes.architecture1.startFrame}
+          durationInFrames={scenes.architecture1.durationFrames}
+          name="ArchitectureDiagram1"
+        >
+          <ArchitectureScene
+            title={scenes.architecture1.title}
+            leftNode={scenes.architecture1.leftNode}
+            rightNode={scenes.architecture1.rightNode}
+            config={scenes.architecture1.config}
+          />
+        </Sequence>
+      )}
+
+      {/* 4. Live Terminal / IaC Demo */}
+      {scenes.terminalDemo && (
+        <Sequence
+          from={scenes.terminalDemo.startFrame}
+          durationInFrames={scenes.terminalDemo.durationFrames}
+          name="TerminalDemo"
+        >
+          <TerminalScene
+            heading={scenes.terminalDemo.heading}
+            title={scenes.terminalDemo.title}
+          />
+        </Sequence>
+      )}
+
+      {/* 5. Production Telemetry & Metrics */}
+      {scenes.metricsDashboard && (
+        <Sequence
+          from={scenes.metricsDashboard.startFrame}
+          durationInFrames={scenes.metricsDashboard.durationFrames}
+          name="MetricsDashboard"
+        >
+          <MetricsScene
+            title={scenes.metricsDashboard.title}
+            subtitle={scenes.metricsDashboard.subtitle}
+          />
+        </Sequence>
+      )}
+
+      {/* 6. Secondary Architecture Deep-Dive */}
+      {scenes.architecture2 && (
+        <Sequence
+          from={scenes.architecture2.startFrame}
+          durationInFrames={scenes.architecture2.durationFrames}
+          name="ArchitectureDiagram2"
+        >
+          <ArchitectureScene
+            title={scenes.architecture2.title}
+            config={scenes.architecture2.config}
+          />
+        </Sequence>
+      )}
+
+      {/* 7. Outro / Call-to-Action Card */}
+      {scenes.outroCard && (
+        <Sequence
+          from={scenes.outroCard.startFrame}
+          durationInFrames={scenes.outroCard.durationFrames}
+          name="OutroCard"
+        >
+          <TitleScene title={scenes.outroCard.title} />
+        </Sequence>
+      )}
+    </AbsoluteFill>
+  );
+};

@@ -9,13 +9,23 @@
   },
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/s3-request-presigner": "^3.1169.0",
     "@remotion/cli": "4.0.543",
+    "@remotion/lambda": "^4.0.543",
+    "@remotion/player": "4.0.543",
+    "@tailwindcss/postcss": "^4.3.5",
+    "autoprefixer": "^10.6.2",
+    "next": "^16.4.6",
+    "postcss": "^8.5.33",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "remotion": "4.0.543"
+    "remotion": "4.0.543",
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.543",
+    "@types/node": "^22.0.0",
     "@types/react": "19.3.0",
     "@types/web": "0.0.166",
     "eslint": "10.12.0",
@@ -23,10 +33,14 @@
     "typescript": "5.9.3"
   },
   "scripts": {
-    "dev": "remotion studio",
-    "build": "remotion bundle",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "studio": "remotion studio",
+    "build:remotion": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "test": "node tests/run-tests.js"
   },
   "allowScripts": {
     "esbuild": false

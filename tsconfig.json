@@ -1,16 +1,44 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2020",
     "module": "Preserve",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
-    "lib": ["es2015"],
-    "esModuleInterop": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
     "skipLibCheck": true,
+    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "noUnusedLocals": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
-  "exclude": ["remotion.config.ts"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "remotion.config.ts"
+  ]
 }
