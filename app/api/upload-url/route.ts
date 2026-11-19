@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getAwsConfig, hasAwsCredentials } from "../../../src/lib/awsConfig";
+import { requireApiAuth } from "../../../src/lib/serverAuth";
 
 export async function POST(request: Request) {
   try {
+    const authError = requireApiAuth(request);
+    if (authError) return authError;
+
     if (!hasAwsCredentials()) {
       return NextResponse.json(
         {
@@ -15,11 +19,44 @@ export async function POST(request: Request) {
       );
     }
 
-    const { fileName, contentType = "video/mp4" } = await request.json();
+    const ALLOWED_CONTENT_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+    const ALLOWED_EXTENSIONS = /\.(mp4|mov|webm)$/i;
 
-    if (!fileName) {
+    let body: { fileName?: unknown; contentType?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const { fileName, contentType = "video/mp4" } = body;
+
+    if (!fileName || typeof fileName !== "string" || fileName.trim().length === 0) {
       return NextResponse.json(
-        { error: "fileName is required" },
+        { error: "fileName is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    if (fileName.length > 255) {
+      return NextResponse.json(
+        { error: "fileName exceeds maximum allowed length of 255 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (!ALLOWED_EXTENSIONS.test(fileName)) {
+      return NextResponse.json(
+        { error: "Invalid file extension. Only .mp4, .mov, and .webm files are allowed." },
+        { status: 400 }
+      );
+    }
+
+    if (typeof contentType !== "string" || !ALLOWED_CONTENT_TYPES.includes(contentType)) {
+      return NextResponse.json(
+        {
+          error: `Invalid contentType '${contentType}'. Allowed types: ${ALLOWED_CONTENT_TYPES.join(", ")}`,
+        },
         { status: 400 }
       );
     }

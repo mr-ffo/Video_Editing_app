@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { getRenderProgress, type AwsRegion } from "@remotion/lambda/client";
 import { getAwsConfig, hasAwsCredentials } from "../../../src/lib/awsConfig";
+import { requireApiAuth } from "../../../src/lib/serverAuth";
 
 export async function GET(request: Request) {
   try {
+    const authError = requireApiAuth(request);
+    if (authError) return authError;
+
     if (!hasAwsCredentials()) {
       return NextResponse.json(
         { error: "AWS credentials not configured." },
@@ -15,14 +19,38 @@ export async function GET(request: Request) {
     const renderId = searchParams.get("renderId");
     const bucketName = searchParams.get("bucketName");
 
-    if (!renderId || !bucketName) {
+    if (!renderId || typeof renderId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(renderId)) {
       return NextResponse.json(
-        { error: "renderId and bucketName are required query parameters." },
+        { error: "Valid renderId query parameter is required." },
         { status: 400 }
       );
     }
 
     const config = getAwsConfig();
+
+    // Verify bucket against server configuration
+    const resolvedBucket = config.bucketName || bucketName;
+    if (!resolvedBucket) {
+      return NextResponse.json(
+        { error: "bucketName is required." },
+        { status: 400 }
+      );
+    }
+
+    if (config.bucketName && bucketName && bucketName !== config.bucketName) {
+      return NextResponse.json(
+        { error: "Unauthorized bucketName parameter. Bucket must match server configuration." },
+        { status: 403 }
+      );
+    }
+
+    // Remotion Lambda bucket format check
+    if (!/^remotionlambda-[a-z0-9-]+$/.test(resolvedBucket) && !/^[a-z0-9.-]+$/.test(resolvedBucket)) {
+      return NextResponse.json(
+        { error: "Invalid bucketName format." },
+        { status: 400 }
+      );
+    }
 
     if (!config.functionName) {
       return NextResponse.json(
@@ -33,7 +61,7 @@ export async function GET(request: Request) {
 
     const progress = await getRenderProgress({
       renderId,
-      bucketName,
+      bucketName: resolvedBucket,
       functionName: config.functionName,
       region: config.region as AwsRegion,
       skipLambdaInvocation: true,

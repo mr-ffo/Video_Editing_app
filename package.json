@@ -12,7 +12,7 @@
     "@aws-sdk/client-s3": "^3.1169.0",
     "@aws-sdk/s3-request-presigner": "^3.1169.0",
     "@remotion/cli": "4.0.543",
-    "@remotion/lambda": "^4.0.543",
+    "@remotion/lambda": "4.0.543",
     "@remotion/player": "4.0.543",
     "@tailwindcss/postcss": "^4.3.5",
     "autoprefixer": "^10.6.2",
@@ -28,6 +28,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "19.3.0",
     "@types/web": "0.0.166",
+    "esbuild": "^0.25.0",
     "eslint": "10.12.0",
     "prettier": "3.8.1",
     "typescript": "5.9.3"
@@ -39,7 +40,7 @@
     "studio": "remotion studio",
     "build:remotion": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc",
+    "lint": "eslint src app && tsc",
     "test": "node tests/run-tests.js"
   },
   "allowScripts": {

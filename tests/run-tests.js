@@ -2,6 +2,10 @@ const esbuild = require("esbuild");
 const path = require("path");
 const fs = require("fs");
 
+if (fs.existsSync(".env") && typeof process.loadEnvFile === "function") {
+  process.loadEnvFile(".env");
+}
+
 const testDir = path.join(__dirname);
 const testFiles = fs
   .readdirSync(testDir)

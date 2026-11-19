@@ -35,9 +35,17 @@ export interface DiagramNode {
   status?: NodeStatusType;
   description?: string;
   position?: DiagramNodePosition;
+  x?: number;
+  y?: number;
   delayFrames?: number;
   highlighted?: boolean;
+  width?: number;
+  height?: number;
+  badge?: string;
 }
+
+export type ConnectionLineStyle = "curved" | "straight" | "orthogonal";
+export type ConnectionDirection = "forward" | "bidirectional" | "reverse";
 
 export interface DiagramConnection {
   id: string;
@@ -49,6 +57,24 @@ export interface DiagramConnection {
   startDelayFrames?: number;
   drawDurationFrames?: number;
   color?: string;
+  style?: ConnectionLineStyle;
+  lineStyle?: ConnectionLineStyle;
+  direction?: ConnectionDirection;
+}
+
+export interface DiagramContainer {
+  id: string;
+  label: string;
+  type?: "vpc" | "subnet" | "region" | "az" | "boundary" | "custom";
+  color?: string;
+  borderColor?: string;
+  backgroundColor?: string;
+  borderStyle?: "solid" | "dashed";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  nodeIds?: string[];
 }
 
 export interface DiagramLayoutConfig {
@@ -72,6 +98,7 @@ export interface DiagramConfig {
   title: string;
   nodes: DiagramNode[];
   connections: DiagramConnection[];
+  containers?: DiagramContainer[];
   layout?: DiagramLayoutConfig;
   animation?: DiagramAnimationConfig;
 }

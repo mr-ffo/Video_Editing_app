@@ -7,22 +7,61 @@ import { LowerThird } from "./LowerThird";
 import { MetricsScene } from "./scenes/MetricsScene";
 import { TerminalScene } from "./scenes/TerminalScene";
 import { TitleCard } from "./TitleCard";
-import { VideoOverlay } from "./VideoOverlay";
 import { KeywordOverlay } from "./components/callouts/KeywordOverlay";
 import { demoKeywordCues } from "./data/scenePresets";
 import { timing } from "./theme/timing";
 
+import { DynamicSceneComposition } from "./compositions/DynamicSceneComposition";
+import { TEMPLATE_PROJECTS } from "./data/sceneTemplates";
+import { calculateTotalScenesDuration } from "./types/scene";
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* 1. Master Video Overlay Composition (Preserves original baseline) */}
+      {/* 0. Dynamic Multi-Scene Project Composition */}
+      <Composition
+        id="DynamicProject"
+        component={DynamicSceneComposition}
+        calculateMetadata={({ props }) => {
+          const typedProps = props as { aspectRatio?: string; scenes?: typeof TEMPLATE_PROJECTS[0]["scenes"] };
+          const width =
+            typedProps.aspectRatio === "9:16" ? 1080 : typedProps.aspectRatio === "1:1" ? 1080 : 1920;
+          const height =
+            typedProps.aspectRatio === "9:16" ? 1920 : typedProps.aspectRatio === "1:1" ? 1080 : 1080;
+          const totalFrames = calculateTotalScenesDuration(typedProps.scenes || []);
+          return {
+            durationInFrames: Math.max(30, totalFrames),
+            width,
+            height,
+            fps: 30,
+          };
+        }}
+        durationInFrames={1260}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{
+          scenes: TEMPLATE_PROJECTS[0].scenes,
+          aspectRatio: "16:9" as const,
+        }}
+      />
+      {/* 1. Master Video Overlay Composition (Canonical AdaptiveVideoOverlay engine) */}
       <Composition
         id="VideoOverlay"
-        component={VideoOverlay}
+        component={AdaptiveVideoOverlay}
         durationInFrames={1800}
         fps={30}
         width={1920}
         height={1080}
+        defaultProps={{
+          durationMinutes: 1,
+          videoSrc: "test-video.mp4",
+          episodeTitle: "Behind The Cloud",
+          speakerName: "Folarin Favour Olaoluwapo",
+          speakerTitle: "Cloud Solutions Architect",
+          playbackRate: 1.0,
+          trimSilenceAndFillers: false,
+        }}
       />
 
       {/* 2. Standalone Technical Explainer Template (Data-driven educational video) */}
@@ -33,6 +72,11 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1920}
         height={1080}
+        defaultProps={{
+          episodeTitle: "Serverless Architecture Deep Dive",
+          speakerName: "Folarin Favour Olaoluwapo",
+          speakerTitle: "Cloud Solutions Architect",
+        }}
       />
 
       {/* 3. Cloud Architecture Diagram (Preserves original baseline & props) */}

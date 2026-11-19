@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { KeywordOverlay } from "../components/callouts/KeywordOverlay";
 import { BackgroundVideo } from "../components/video/BackgroundVideo";
+import { SmartVideo } from "../components/video/SmartVideo";
 import { SplitScreenContainer } from "../components/video/SplitScreenContainer";
 import { getTimelineForDuration, type VideoDurationMinutes } from "../data/timelinePresets";
 import { ArchitectureScene } from "../scenes/ArchitectureScene";
@@ -15,6 +16,11 @@ export interface AdaptiveVideoOverlayProps {
   durationMinutes?: VideoDurationMinutes;
   videoSrc?: string;
   customKeywordCues?: KeywordCue[];
+  episodeTitle?: string;
+  speakerName?: string;
+  speakerTitle?: string;
+  playbackRate?: number;
+  trimSilenceAndFillers?: boolean;
 }
 
 /**
@@ -26,6 +32,11 @@ export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
   durationMinutes = 1,
   videoSrc = "test-video.mp4",
   customKeywordCues,
+  episodeTitle,
+  speakerName,
+  speakerTitle,
+  playbackRate = 1.0,
+  trimSilenceAndFillers = false,
 }) => {
   const schedule = getTimelineForDuration(durationMinutes);
   const { scenes, splitScreenIntervals, keywordCues, totalDurationFrames } = schedule;
@@ -34,11 +45,21 @@ export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
     <AbsoluteFill>
       {/* Background Video wrapped in Multi-Interval SplitScreenContainer */}
       <SplitScreenContainer intervals={splitScreenIntervals}>
-        <BackgroundVideo
-          src={videoSrc}
-          durationInFrames={totalDurationFrames}
-          objectFit="cover"
-        />
+        {trimSilenceAndFillers ? (
+          <SmartVideo
+            src={videoSrc}
+            totalDurationInFrames={totalDurationFrames}
+            playbackRate={playbackRate}
+            punchInOnCuts={true}
+          />
+        ) : (
+          <BackgroundVideo
+            src={videoSrc}
+            durationInFrames={totalDurationFrames}
+            playbackRate={playbackRate}
+            objectFit="cover"
+          />
+        )}
       </SplitScreenContainer>
 
       {/* Kinetic Spoken Keyword Callouts */}
@@ -51,7 +72,7 @@ export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
           durationInFrames={scenes.titleIntro.durationFrames}
           name="TitleCard"
         >
-          <TitleScene title={scenes.titleIntro.title} />
+          <TitleScene title={episodeTitle || scenes.titleIntro.title} />
         </Sequence>
       )}
 
@@ -63,8 +84,8 @@ export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
           name="SpeakerLowerThird"
         >
           <SpeakerScene
-            name={scenes.speakerLowerThird.name}
-            title={scenes.speakerLowerThird.title}
+            name={speakerName || scenes.speakerLowerThird.name}
+            title={speakerTitle || scenes.speakerLowerThird.title}
           />
         </Sequence>
       )}
@@ -134,7 +155,7 @@ export const AdaptiveVideoOverlay: React.FC<AdaptiveVideoOverlayProps> = ({
           durationInFrames={scenes.outroCard.durationFrames}
           name="OutroCard"
         >
-          <TitleScene title={scenes.outroCard.title} />
+          <TitleScene title={episodeTitle ? `${episodeTitle} • Complete` : scenes.outroCard.title} />
         </Sequence>
       )}
     </AbsoluteFill>

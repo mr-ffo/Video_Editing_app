@@ -2,19 +2,34 @@
 
 import React, { useState } from "react";
 import type { StudioConfig } from "./SidebarControls";
+import type { AspectRatio, SceneItem } from "../../src/types/scene";
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   config: StudioConfig;
+  scenes?: SceneItem[];
+  aspectRatio?: AspectRatio;
 }
 
 type ExportState = "idle" | "uploading" | "rendering" | "completed" | "error";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function parseSafeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Server returned status ${res.status} (${res.statusText || "Error"}): ${text.slice(0, 150)}`);
+  }
+}
 
 export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
   config,
+  scenes = [],
+  aspectRatio = "16:9",
 }) => {
   const [state, setState] = useState<ExportState>("idle");
   const [statusMessage, setStatusMessage] = useState<string>("");
@@ -52,7 +67,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           }),
         });
 
-        const uploadData = await uploadRes.json();
+        const uploadData = await parseSafeJson(uploadRes);
         if (!uploadRes.ok) {
           throw new Error(uploadData.error || "Failed to get S3 upload URL");
         }
@@ -77,13 +92,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       setStatusMessage("Dispatching render job to AWS Lambda cluster...");
       setProgressPercent(35);
 
-      const renderRes = await fetch("/api/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          compositionId: config.compositionId,
-          durationMinutes: config.durationMinutes,
-          inputProps: {
+      const isDynamic = config.compositionId === "DynamicProject";
+      const inputProps = isDynamic
+        ? {
+            scenes,
+            aspectRatio,
+          }
+        : {
             durationMinutes: config.durationMinutes,
             videoSrc: finalVideoUrl,
             customKeywordCues: config.keywordCues,
@@ -91,11 +106,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             speakerName: config.speakerName,
             speakerTitle: config.speakerTitle,
             playbackRate: config.playbackRate,
-          },
+          };
+
+      const renderRes = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          compositionId: config.compositionId,
+          durationMinutes: config.durationMinutes,
+          inputProps,
         }),
       });
 
-      const renderData = await renderRes.json();
+      const renderData = await parseSafeJson(renderRes);
       if (!renderRes.ok) {
         throw new Error(renderData.error || "Failed to initiate Lambda render");
       }
@@ -110,7 +133,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           const progressRes = await fetch(
             `/api/progress?renderId=${encodeURIComponent(renderId)}&bucketName=${encodeURIComponent(bucketName)}`
           );
-          const progressData = await progressRes.json();
+          const progressData = await parseSafeJson(progressRes);
 
           if (!progressRes.ok) {
             consecutiveErrors++;

@@ -6,7 +6,7 @@ import type { KeywordCue } from "../../src/types/callout";
 import { resolveKeyword } from "../../src/components/callouts/keywordDictionary";
 
 export interface StudioConfig {
-  compositionId: "VideoOverlay" | "TechnicalExplainer";
+  compositionId: "VideoOverlay" | "TechnicalExplainer" | "DynamicProject";
   videoUrl: string;
   videoFileName: string;
   speakerName: string;

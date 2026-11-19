@@ -61,11 +61,21 @@ const serverlessArchitectureConfig: DiagramConfig = {
   ],
 };
 
+export interface TechnicalExplainerProps {
+  episodeTitle?: string;
+  speakerName?: string;
+  speakerTitle?: string;
+}
+
 /**
  * TechnicalExplainer: Reusable educational motion graphics composition
  * for software engineering tutorials without requiring external background video.
  */
-export const TechnicalExplainer: React.FC = () => {
+export const TechnicalExplainer: React.FC<TechnicalExplainerProps> = ({
+  episodeTitle = "Serverless Architecture Deep Dive",
+  speakerName = "Folarin Favour Olaoluwapo",
+  speakerTitle = "Cloud Solutions Architect",
+}) => {
   return (
     <AbsoluteFill
       style={{
@@ -82,7 +92,7 @@ export const TechnicalExplainer: React.FC = () => {
             sectionTitle="Introduction"
             durationInFrames={105}
           />
-          <TitleScene title="Serverless Architecture Deep Dive" />
+          <TitleScene title={episodeTitle} />
         </CinematicTransition>
       </Sequence>
 
@@ -96,8 +106,8 @@ export const TechnicalExplainer: React.FC = () => {
             durationInFrames={135}
           />
           <SpeakerScene
-            name="Folarin Favour Olaoluwapo"
-            title="Cloud Solutions Architect"
+            name={speakerName}
+            title={speakerTitle}
           />
         </CinematicTransition>
       </Sequence>

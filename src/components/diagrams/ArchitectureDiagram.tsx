@@ -9,6 +9,7 @@ import type {
   DiagramAnimationConfig,
   DiagramConfig,
   DiagramConnection,
+  DiagramContainer,
   DiagramLayoutConfig,
   DiagramNode as IDiagramNode,
 } from "../../types/diagram";
@@ -21,6 +22,7 @@ export interface ArchitectureDiagramProps {
   title?: string;
   nodes?: IDiagramNode[];
   connections?: DiagramConnection[];
+  containers?: DiagramContainer[];
   layout?: DiagramLayoutConfig;
   animation?: DiagramAnimationConfig;
   showScanlines?: boolean;
@@ -32,6 +34,7 @@ export const ArchitectureDiagram: React.FC<ArchitectureDiagramProps> = ({
   title,
   nodes: directNodes,
   connections: directConnections,
+  containers: directContainers,
   layout: directLayout,
   animation: directAnimation,
   showScanlines: directShowScanlines,
@@ -44,6 +47,7 @@ export const ArchitectureDiagram: React.FC<ArchitectureDiagramProps> = ({
   const resolvedTitle = title ?? config?.title ?? "System Architecture";
   const nodes = directNodes ?? config?.nodes ?? [];
   const connections = directConnections ?? config?.connections ?? [];
+  const containers = directContainers ?? config?.containers ?? [];
   const layout = directLayout ?? config?.layout;
   const animation = directAnimation ?? config?.animation;
   const showScanlines = directShowScanlines ?? layout?.showScanlines ?? true;
@@ -140,24 +144,138 @@ export const ArchitectureDiagram: React.FC<ArchitectureDiagramProps> = ({
               position: "relative",
               width: "100%",
               height: "100%",
-              minHeight: 280,
+              minHeight: 380,
             }}
           >
-            {nodes.map((node, index) => (
-              <DiagramNode
-                key={`${node.id || "node"}-${index}`}
-                node={node}
-                frame={frame}
-              />
+            {/* Containers / Logical Boundaries */}
+            {containers.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  position: "absolute",
+                  left: c.x,
+                  top: c.y,
+                  width: c.width,
+                  height: c.height,
+                  borderRadius: 16,
+                  border: `${c.borderStyle === "dashed" ? "2px dashed" : "2px solid"} ${c.color || "rgba(59, 130, 246, 0.4)"}`,
+                  backgroundColor: `${c.color || "#3b82f6"}10`,
+                  padding: 12,
+                  pointerEvents: "none",
+                  zIndex: 0,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: c.color || "#60a5fa",
+                    backgroundColor: "rgba(15, 23, 42, 0.8)",
+                    padding: "2px 8px",
+                    borderRadius: 6,
+                    border: `1px solid ${c.color || "rgba(59, 130, 246, 0.3)"}`,
+                  }}
+                >
+                  {c.label}
+                </span>
+              </div>
             ))}
-            {connections.map((conn, index) => (
-              <ConnectionLine
-                key={`conn-${conn.id || "c"}-${index}`}
-                connection={conn}
-                frame={frame}
-                width={gap}
-              />
-            ))}
+
+            {/* Freeform 2D SVG Connections Overlay */}
+            <svg
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            >
+              <defs>
+                <marker
+                  id="arch-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill={colors.brand.accent} />
+                </marker>
+              </defs>
+              {connections.map((conn, index) => {
+                const sNode = nodes.find((n) => n.id === conn.sourceId);
+                const tNode = nodes.find((n) => n.id === conn.targetId);
+                const sX = typeof sNode?.position?.x === "number" ? sNode.position.x + (sNode.width ? sNode.width / 2 : 75) : null;
+                const sY = typeof sNode?.position?.y === "number" ? sNode.position.y + (sNode.height ? sNode.height / 2 : 35) : null;
+                const tX = typeof tNode?.position?.x === "number" ? tNode.position.x + (tNode.width ? tNode.width / 2 : 75) : null;
+                const tY = typeof tNode?.position?.y === "number" ? tNode.position.y + (tNode.height ? tNode.height / 2 : 35) : null;
+
+                if (sX !== null && sY !== null && tX !== null && tY !== null) {
+                  const connColor = conn.color || colors.brand.accent;
+                  const isCurved = conn.style === "curved";
+                  const isOrthogonal = conn.style === "orthogonal";
+                  const midX = (sX + tX) / 2;
+                  const pathD = isCurved
+                    ? `M ${sX} ${sY} C ${midX} ${sY}, ${midX} ${tY}, ${tX} ${tY}`
+                    : isOrthogonal
+                    ? `M ${sX} ${sY} L ${midX} ${sY} L ${midX} ${tY} L ${tX} ${tY}`
+                    : `M ${sX} ${sY} L ${tX} ${tY}`;
+
+                  return (
+                    <g key={`svg-conn-${conn.id || index}`}>
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke={connColor}
+                        strokeWidth={2.5}
+                        strokeDasharray={conn.animatedDataFlow !== false ? "6 4" : undefined}
+                        strokeDashoffset={conn.animatedDataFlow !== false ? -frame * 1.5 : undefined}
+                        markerEnd={conn.showArrow !== false ? "url(#arch-arrow)" : undefined}
+                        opacity={0.85}
+                      />
+                      {conn.label && (
+                        <text
+                          x={midX}
+                          y={(sY + tY) / 2 - 8}
+                          fill="#e2e8f0"
+                          fontSize={11}
+                          fontWeight={600}
+                          textAnchor="middle"
+                          style={{
+                            backgroundColor: "rgba(15,23,42,0.9)",
+                            fontFamily: typography.fonts.sans,
+                          }}
+                        >
+                          {conn.label}
+                        </text>
+                      )}
+                    </g>
+                  );
+                }
+
+                return (
+                  <foreignObject key={`fo-conn-${conn.id || index}`} width="100%" height="100%">
+                    <ConnectionLine connection={conn} frame={frame} width={gap} />
+                  </foreignObject>
+                );
+              })}
+            </svg>
+
+            {/* Nodes */}
+            <div style={{ position: "relative", zIndex: 2 }}>
+              {nodes.map((node, index) => (
+                <DiagramNode
+                  key={`${node.id || "node"}-${index}`}
+                  node={node}
+                  frame={frame}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           /* Standard Flex Workflow (Horizontal or Vertical) */
